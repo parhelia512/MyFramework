@@ -1,10 +1,10 @@
-﻿#if UNITY_EDITOR
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 [ExecuteAlways]
 public class SequenceImagePreview : SequenceImagePreviewBase
 {
+#if UNITY_EDITOR
 	protected Image mImage;
 	public override void Awake()
 	{
@@ -15,6 +15,5 @@ public class SequenceImagePreview : SequenceImagePreviewBase
 	{
 		return mImage;
 	}
-}
-
 #endif
+}

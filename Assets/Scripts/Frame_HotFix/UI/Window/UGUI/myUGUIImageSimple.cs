@@ -138,10 +138,10 @@ public class myUGUIImageSimple : myUGUIObject
 		}
 		return mImage.material.shader.name;
 	}
-	public override void setAlpha(float alpha, bool fadeChild)
+	public override void setAlpha(float alpha)
 	{
-		base.setAlpha(alpha, fadeChild);
-		if(mImage == null)
+		base.setAlpha(alpha);
+		if (mImage == null)
 		{
 			return;
 		}

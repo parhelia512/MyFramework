@@ -78,9 +78,9 @@ public class myUGUITextTMP : myUGUIObject, IUGUIText
 	}
 	public string getText() { return mText.text; }
 	public override float getAlpha() { return mText.color.a; }
-	public override void setAlpha(float alpha, bool fadeChild)
+	public override void setAlpha(float alpha)
 	{
-		base.setAlpha(alpha, fadeChild);
+		base.setAlpha(alpha);
 		Color color = mText.color;
 		color.a = alpha;
 		mText.color = color;

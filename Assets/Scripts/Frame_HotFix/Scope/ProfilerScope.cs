@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Runtime.CompilerServices;
-using UnityEngine.Profiling;
+using Unity.Profiling;
 using static StringUtility;
 using static FrameBaseUtility;
 
@@ -11,40 +11,42 @@ using static FrameBaseUtility;
 // 不能直接调用默认构造
 public struct ProfilerScope : IDisposable
 {
-	private bool mBeginSample;
+	private static readonly bool mValid = isDevOrEditor();
+	private static readonly ProfilerMarker[] mProfilerMarkers = CreateMarkers();
+	private ProfilerMarker.AutoScope mScope;
+	private static ProfilerMarker[] CreateMarkers()
+	{
+		var arr = new ProfilerMarker[30000];
+		for (int i = 0; i < arr.Length; ++i)
+		{
+			arr[i] = new ProfilerMarker(IToS(i));
+		}
+		return arr;
+	}
 	public ProfilerScope(string name)
 	{
-		if (isDevOrEditor())
-		{
-			mBeginSample = true;
-			Profiler.BeginSample(name);
-		}
-		else
-		{
-			mBeginSample = false;
-		}
+		mScope = mValid ? new ProfilerMarker(name).Auto() : default;
 	}
 	// id固定填0即可,用于避免直接调用默认构造
 	public ProfilerScope(int id, [CallerMemberName] string callerName = null, [CallerLineNumber] int line = 0, [CallerFilePath] string file = null)
 	{
-		if (isDevOrEditor())
+		if (mValid)
 		{
-			mBeginSample = true;
 			// 如果想要更详细的信息,则可以使用下面被注释的哪一行
-			Profiler.BeginSample(IToS(line));
-			// 这里使用Path.GetFileName是为了能够在多线程调用
-			//Profiler.BeginSample(callerName + "," + Path.GetFileName(file) + ":" + IToS(line));
+			mScope = mProfilerMarkers[line].Auto();
+			// 更加准确的信息显示,但是会有额外的GC和性能消耗,这里使用Path.GetFileName是为了能够在多线程调用
+			//mScope = new ProfilerMarker(callerName + "," + Path.GetFileName(file) + ":" + IToS(line)).Auto();
 		}
 		else
 		{
-			mBeginSample = false;
+			mScope = default;
 		}
 	}
 	public void Dispose()
 	{
-		if (mBeginSample)
+		if (mValid)
 		{
-			Profiler.EndSample();
+			mScope.Dispose();
 		}
 	}
 }

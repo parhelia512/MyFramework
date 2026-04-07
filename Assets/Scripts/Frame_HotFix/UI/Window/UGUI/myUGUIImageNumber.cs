@@ -63,7 +63,7 @@ public class myUGUIImageNumber : myUGUIObject
 		// 为了尽量确保ImageAtlasPath中记录的图集路径与图集完全一致,在销毁窗口时还原初始的图片
 		// 这样在重复使用当前物体时在校验图集路径时不会出错,但是如果在当前物体使用过程中销毁了原始的图片,则可能会报错
 		mRenderer.sprite = mOriginSprite;
-		setAlpha(1.0f, false);
+		setAlpha(1.0f);
 		mAtlasManager.unloadAtlas(ref mOriginAtlasPtr);
 		mAtlasPtr = null;
 		base.destroy();

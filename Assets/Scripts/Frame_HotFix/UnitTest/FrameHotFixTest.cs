@@ -13,7 +13,7 @@ public class FrameHotFixTest
 	{
 		// Frame_HotFix 测试已移动到 Frame_HotFix/UnitTest 目录
 		// 通过 FrameHotFixTestRunner.RunAllTests() 统一运行
-		
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 		Register("MostSafeFloatTest", MostSafeFloatTest.Run);
 		Register("SafeValueTypeTest", SafeValueTypeTest.Run);
 		Register("NetPacketBitTest", NetPacketBitTest.Run);
@@ -62,7 +62,8 @@ public class FrameHotFixTest
 		Register("SafeCollectionTest", SafeCollectionTest.Run);
 		Register("SerializerBitTest", SerializerBitTest.Run);
 		Register("SerializeTest", SerializeTest.Run);
-		Register("StringUtilityTest", StringUtilityTest.Run);	
+		Register("StringUtilityTest", StringUtilityTest.Run);
+#endif
 		doRunAll(sTests);
 	}
 	public static void Register(string name, Action run)

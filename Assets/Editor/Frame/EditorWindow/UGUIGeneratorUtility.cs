@@ -448,9 +448,8 @@ public class UGUIGeneratorUtility
 	{
 		string curObjName = curData.getMemberName();
 		GameObject parent = curData.getParentObject();
-		if (parent == null)
+		if (list.removeIf(curData, parent == null))
 		{
-			list.Remove(curData);
 			return;
 		}
 		// 父节点是界面的根节点,则不需要传父节点就可以直接创建
@@ -460,7 +459,7 @@ public class UGUIGeneratorUtility
 			// 创建的是成员变量
 			if (curDataIndex >= 0)
 			{
-				generateAssignWindowLine("\t\t", generatedLines, curObjName, null, false, curData);
+				generateAssignWindowLine("\t\t", generatedLines, null, false, curData);
 			}
 			// 创建的是临时变量,临时变量不考虑数组类型
 			else
@@ -493,7 +492,7 @@ public class UGUIGeneratorUtility
 			// 创建的是成员变量
 			if (fixedList.IndexOf(curData) >= 0)
 			{
-				generateAssignWindowLine("\t\t", generatedLines, curObjName, parentName, parentIsSubUI, curData);
+				generateAssignWindowLine("\t\t", generatedLines, parentName, parentIsSubUI, curData);
 			}
 			// 创建的是临时变量,临时变量不考虑数组类型
 			else
@@ -540,25 +539,34 @@ public class UGUIGeneratorUtility
 		lines.Add(prefix + "newObject(out " + typeof(myUGUIObject).ToString() + " " + varName + ", " + parentParam + "\"" + curName + "\", false);");
 		return varName;
 	}
-	public static void generateAssignWindowLine(string prefix, List<string> lines, string curObjectName, string parentName, bool parentIsSubUI, MemberData data)
+	// prefix用于控制缩进
+	// memberName是当前成员的名字,可能是自定义的
+	// curObjectName就是节点自身的名字
+	// parentName是父节点的变量名字,如果父节点是子页面类型的,则需要在父节点变量名字后面加上.getRoot()
+	// parentIsSubUI是父节点是否是子页面类型的,因为子页面类型的父节点需要特殊处理一下
+	// MemberData包含了当前成员的所有信息,可能会用到
+	public static void generateAssignWindowLine(string prefix, List<string> lines, string parentName, bool parentIsSubUI, MemberData data)
 	{
-		string newName = data.mArrayType == ARRAY_TYPE.STATIC_ARRAY ? curObjectName.removeEndNumber() : curObjectName;
 		if (parentIsSubUI && parentName != null)
 		{
 			parentName += ".getRoot()";
 		}
+		string memberName = data.getMemberName();
+		string gameObjectName = data.getGameObjectName();
 		if (data.mArrayType != ARRAY_TYPE.NONE)
 		{
+			string newMemberName = data.mArrayType == ARRAY_TYPE.STATIC_ARRAY ? memberName.removeEndNumber() : memberName;
+			string newGameObjectName = data.mArrayType == ARRAY_TYPE.STATIC_ARRAY ? gameObjectName.removeEndNumber() : gameObjectName;
 			// 动态列表只支持控件或者子页面类型的
 			if (data.mArrayType == ARRAY_TYPE.DYNAMIC_ARRAY)
 			{
 				if (data.mWindowType == WINDOW_TYPE.COMMON_CONTROL || data.mWindowType == WINDOW_TYPE.SUB_UI)
 				{
-					string varName = generateAssignWindowLineTemp(prefix, lines, curObjectName, parentName, false);
-					lines.Add(prefix + "for (int i = 0; i < m" + newName + ".Length; ++i)");
+					string varName = generateAssignWindowLineTemp(prefix, lines, gameObjectName, parentName, false);
+					lines.Add(prefix + "for (int i = 0; i < m" + newMemberName + ".Length; ++i)");
 					lines.Add(prefix + "{");
 					string parentParam = parentName ?? "mRoot";
-					lines.Add(prefix + "\tm" + newName + "[i].assignWindow(" + parentParam + ", " + varName + ", \"" + newName + "\" + IToS(i));");
+					lines.Add(prefix + "\tm" + newMemberName + "[i].assignWindow(" + parentParam + ", " + varName + ", \"" + newGameObjectName + "\" + IToS(i));");
 					lines.Add(prefix + "}");
 					// 动态生成的数组都需要把模板节点隐藏起来
 					lines.Add(prefix + varName + ".setActive(false);");
@@ -566,35 +574,35 @@ public class UGUIGeneratorUtility
 			}
 			else
 			{
-				lines.Add(prefix + "for (int i = 0; i < m" + newName + ".Length; ++i)");
+				lines.Add(prefix + "for (int i = 0; i < m" + newMemberName + ".Length; ++i)");
 				lines.Add(prefix + "{");
 				if (data.mWindowType == WINDOW_TYPE.NORMAL_WINDOW)
 				{
 					string showErrorParam = data.mHideError ? ", false" : "";
 					string parentParam = parentName != null ? parentName + ", " : "";
-					lines.Add(prefix + "\tnewObject(out m" + newName + "[i], " + parentParam + "\"" + newName + "\" + IToS(i)" + showErrorParam + ");");
+					lines.Add(prefix + "\tnewObject(out m" + newMemberName + "[i], " + parentParam + "\"" + newGameObjectName + "\" + IToS(i)" + showErrorParam + ");");
 				}
 				else
 				{
 					string parentParam = parentName ?? "mRoot";
-					lines.Add(prefix + "\tm" + newName + "[i].assignWindow(" + parentParam + ", \"" + newName + "\" + IToS(i));");
+					lines.Add(prefix + "\tm" + newMemberName + "[i].assignWindow(" + parentParam + ", \"" + newGameObjectName + "\" + IToS(i));");
 				}
 				lines.Add(prefix + "}");
 			}
 		}
 		else
 		{
-			string createVarName = "m" + curObjectName;
+			string createVarName = "m" + memberName;
 			if (data.mWindowType == WINDOW_TYPE.NORMAL_WINDOW)
 			{
 				string showErrorParam = data.mHideError ? ", false" : "";
 				string parentParam = parentName != null ? parentName + ", " : "";
-				lines.Add(prefix + "newObject(out " + createVarName + ", " + parentParam + "\"" + curObjectName + "\"" + showErrorParam + ");");
+				lines.Add(prefix + "newObject(out " + createVarName + ", " + parentParam + "\"" + gameObjectName + "\"" + showErrorParam + ");");
 			}
 			else if (data.mWindowType == WINDOW_TYPE.SUB_UI || data.mWindowType == WINDOW_TYPE.COMMON_CONTROL)
 			{
 				string parentParam = parentName ?? "mRoot";
-				lines.Add(prefix + createVarName + ".assignWindow(" + parentParam + ", \"" + curObjectName + "\");");
+				lines.Add(prefix + createVarName + ".assignWindow(" + parentParam + ", \"" + gameObjectName + "\");");
 			}
 			else if (data.mWindowType == WINDOW_TYPE.SCROLL_LIST)
 			{

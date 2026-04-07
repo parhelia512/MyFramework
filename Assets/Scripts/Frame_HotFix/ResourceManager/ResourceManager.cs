@@ -17,7 +17,8 @@ public class ResourceManager : FrameSystem
 	protected LOAD_SOURCE mLoadSource;											// 加载源,从AssetBundle加载还是从AssetDataBase加载
 	protected float mCheckRefTimer;												// 检查资源引用的计时器
 	protected const float CHECK_REF_INTERVAL = 3.0f;							// 检查资源引用的间隔时间
-	protected static int mDownloadTimeout = 10;									// 下载超时时间,秒
+	protected static int mDownloadTimeout = 10;                                 // 下载超时时间,秒
+	protected static long mTokenSeed;                                           // 用于生成一个引用凭证,不能放在ResourceRef<T>中,因为每个模板类型都有一个静态变量,这样就不能保证同一个资源的引用凭证在不同模板类型中是唯一的了
 	public ResourceManager()
 	{
 		mCreateObject = true;
@@ -107,7 +108,6 @@ public class ResourceManager : FrameSystem
 		{
 			return;
 		}
-		res.unuse();
 		UN_CLASS(ref res);
 	}
 	// 卸载指定目录中的所有资源,path为GameResources下的相对路径
@@ -328,19 +328,22 @@ public class ResourceManager : FrameSystem
 			mAssetBundleLoader.downloadAsset(name, callback);
 		}
 	}
-	public void addReference(UObject res, long token)
+	public long addReference(UObject res)
 	{
+		long token = ++mTokenSeed;
 		if (!mReferenceTokenList.getOrAddNew(res).Add(token))
 		{
-			logError("添加资源引用凭证失败");
+			logError("添加资源引用凭证失败:" + token);
 		}
+		return token;
 	}
-	public void removeReference(UObject res, long token)
+	public void removeReference(UObject res, ref long token)
 	{
 		if (!mReferenceTokenList.TryGetValue(res, out var list) || !list.Remove(token))
 		{
-			logError("移除资源引用凭证失败,可能是重复移除一个资源");
+			logError("移除资源引用凭证失败,可能是重复移除一个资源:" + token);
 		}
+		token = 0;
 	}
 	//------------------------------------------------------------------------------------------------------------------------------
 	protected bool unloadInternal(UObject obj, bool showError = true)

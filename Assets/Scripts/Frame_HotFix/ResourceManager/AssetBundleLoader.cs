@@ -85,7 +85,10 @@ public class AssetBundleLoader
 		// 更新检查所有资源包是否需要卸载
 		foreach (var bundle in mAssetBundleInfoList)
 		{
-			bundle.Value.update(elapsedTime);
+			if (bundle.Value.getAssetBundle() != null)
+			{
+				bundle.Value.update(elapsedTime);
+			}
 		}
 	}
 	public void destroy()

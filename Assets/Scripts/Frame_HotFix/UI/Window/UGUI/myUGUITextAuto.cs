@@ -121,9 +121,9 @@ public class myUGUITextAuto : myUGUIObject, IUGUIText
 		}
 		return 1.0f; 
 	}
-	public override void setAlpha(float alpha, bool fadeChild)
+	public override void setAlpha(float alpha)
 	{
-		base.setAlpha(alpha, fadeChild);
+		base.setAlpha(alpha);
 		if (mTextPro != null)
 		{
 			Color color = mTextPro.color;

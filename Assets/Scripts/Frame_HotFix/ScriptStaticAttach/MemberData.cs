@@ -52,6 +52,10 @@ public class MemberData
 		}
 		return parent != null ? parent.gameObject : null;
 	}
+	public string getGameObjectName() 
+	{
+		return mObject != null ? mObject.name : "";
+	}
 	public string getMemberName()
 	{
 		if (mWindowType == WINDOW_TYPE.NORMAL_WINDOW ||

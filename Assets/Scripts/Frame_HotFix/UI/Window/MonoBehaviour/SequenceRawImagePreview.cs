@@ -1,5 +1,4 @@
-﻿#if UNITY_EDITOR
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEditor;
@@ -11,6 +10,7 @@ using static FileUtility;
 [ExecuteAlways]
 public class SequenceRawImagePreview : MonoBehaviour
 {
+#if UNITY_EDITOR
 	[Range(0, 1)]
 	public float mSlider;
 	public RawImage mRawImage;
@@ -56,6 +56,5 @@ public class SequenceRawImagePreview : MonoBehaviour
 			mRawImage.texture = mTextureList[clamp(ceil(mSlider * frameCount) - 1, 0, frameCount - 1)];
 		}
 	}
-}
-
 #endif
+}

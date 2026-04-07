@@ -7,8 +7,8 @@ using static UnityUtility;
 // 所以需要使用UGUIAtlasPtr来封装UGUIAtlas或者TPAtlas给外部使用
 public class AtlasRef : ClassObject
 {
-	private AtlasBase mAtlas;           // 引用的图集
-	private long mToken;                // 引用凭证,一般不允许外部直接访问
+	private AtlasBase mAtlas;				// 引用的图集
+	private long mToken;					// 引用凭证,一般不允许外部直接访问
 	public override void resetProperty()
 	{
 		base.resetProperty();
@@ -19,10 +19,12 @@ public class AtlasRef : ClassObject
 	{
 		mAtlas = atlas;
 		mToken = 0;
-		if (isValid())
+		if (mAtlas == null)
 		{
-			use();
+			logError("atlas is null");
+			return;
 		}
+		mToken = mAtlas.addReference();
 	}
 	public bool isValid()								{ return mAtlas != null && mAtlas.isValid(); }
 	public Sprite getSprite(string name)				{ return mAtlas?.getSprite(name); }
@@ -35,25 +37,14 @@ public class AtlasRef : ClassObject
 	public Vector2 getFirstSpriteSize()					{ return mAtlas.getFirstSpriteSize(); }
 	public long getToken()								{ return mToken; }
 	// 只能由AtlasLoaderBase调用
-	public void unuse()
+	public override void destroy()
 	{
+		base.destroy();
 		if (mAtlas == null)
 		{
 			logError("atlas is null");
 			return;
 		}
-		mAtlas.removeReference(mToken);
-		mToken = 0;
-	}
-	//------------------------------------------------------------------------------------------------------------------------------
-	private void use()
-	{
-		if (mAtlas == null)
-		{
-			logError("atlas is null");
-			return;
-		}
-		mToken = AtlasBase.generateToken();
-		mAtlas.addReference(mToken);
+		mAtlas.removeReference(ref mToken);
 	}
 }

@@ -1,5 +1,4 @@
-﻿#if UNITY_EDITOR
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,6 +8,7 @@ using static MathUtility;
 // 预览一个Image或者SpriteRenderer的序列帧,不带位置偏移,不要直接将这个组件添加到GameObject上,应该需要添加派生出的子类
 public class SequenceImagePreviewBase : MonoBehaviour
 {
+#if UNITY_EDITOR
 	[Range(0, 1)]
 	public float mSlider;
 	public virtual void Awake()
@@ -100,6 +100,5 @@ public class SequenceImagePreviewBase : MonoBehaviour
 			}
 		}
 	}
-}
-
 #endif
+}

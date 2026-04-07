@@ -102,9 +102,9 @@ public class myUGUIRawImage : myUGUIObject, IShaderWindow
 			mWindowShader?.applyShader(mRawImage.material);
 		}
 	}
-	public override void setAlpha(float alpha, bool fadeChild)
+	public override void setAlpha(float alpha)
 	{
-		base.setAlpha(alpha, fadeChild);
+		base.setAlpha(alpha);
 		Color color = mRawImage.color;
 		color.a = alpha;
 		mRawImage.color = color;

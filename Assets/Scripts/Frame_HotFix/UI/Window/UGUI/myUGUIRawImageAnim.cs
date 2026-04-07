@@ -138,7 +138,7 @@ public class myUGUIRawImageAnim : myUGUIRawImage, IUIAnimation
 		{
 			return;
 		}
-		setTexture(mTextureList[mControl.getCurFrameIndex()].newRef(), mUseTextureSize);
+		setTexture(mTextureList[mControl.getCurFrameIndex()].copyRef(), mUseTextureSize);
 		if (!mTexturePosList.isEmpty())
 		{
 			setPosition(mTexturePosList[round(divide(frame, mTextureList.Count * mTexturePosList.Count))]);

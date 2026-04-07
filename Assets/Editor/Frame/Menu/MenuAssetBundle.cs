@@ -16,19 +16,32 @@ using static FrameBaseDefine;
 
 public class MenuAssetBundle
 {
+	public const string MENU_NAME = "AssetBundle/";
 	public static bool mIsPackingAssetBundle;
-	[MenuItem("AssetBundle/清除AssetBundle名称")]
-	public static void clearAllAssetBundleName()
-	{
-		clearAssetBundleName();
-	}
-	[MenuItem("AssetBundle/Pack AssetBundle")]
+	[MenuItem(MENU_NAME + "打包AssetBundle", false, 0)]
 	public static void packAssetBundleMenu()
 	{
 		packAssetBundle(getBuildTarget(), getAssetBundlePath(true), true);
 	}
+	[MenuItem(MENU_NAME + "刷新AssetBundle名字", false, 1)]
+	public static void refreshAllAssetBundleName()
+	{
+		doRefreshAllAssetBundleName();
+	}
+	[MenuItem(MENU_NAME + "刷新选中资源的AssetBundle名字", false, 2)]
+	public static void refreshSingleAssetBundleName()
+	{
+		Selection.objects.For(obj =>
+		{
+			string path = AssetDatabase.GetAssetPath(obj);
+			if (path.startWith(P_GAME_RESOURCES_PATH))
+			{
+				refreshFileAssetBundleName(null, path, isForceSinglePath(projectPathToFullPath(path), getForceSingleFolder()));
+			}
+		});
+	}
 	// assetBundleName是StreamingAsset下的相对路径,带后缀
-	[MenuItem("AssetBundle/Find AssetBundle Dependency")]
+	[MenuItem(MENU_NAME + "查找AssetBundle依赖", false, 3)]
 	public static void findDependencyMenu()
 	{
 		string selection = AssetDatabase.GetAssetPath(Selection.activeObject);
@@ -39,50 +52,12 @@ public class MenuAssetBundle
 		}
 		findAllDependencies(selection.removeStartString(P_ASSET_BUNDLE_ANDROID_PATH));
 	}
-	protected static bool preProcess()
+	[MenuItem(MENU_NAME + "清除AssetBundle名称", false, 4)]
+	public static void clearAllAssetBundleName()
 	{
-		// 收集所有图集,然后将信息写入到图集路径的配置文件中,这个文件会在AtlasManager中用到
-		List<string> pathList = new();
-		HashSet<string> fileNameList = new();
-		foreach (string file in findFilesNonAlloc(F_GAME_RESOURCES_PATH, SPRITE_ATLAS_SUFFIX))
-		{
-			pathList.Add(file.removeStartString(F_GAME_RESOURCES_PATH));
-			if (!fileNameList.Add(getFileNameNoSuffixNoDir(file)))
-			{
-				Debug.LogError("存在重名的图集文件:" + getFileNameNoSuffixNoDir(file));
-				return false;
-			}
-		}
-		writeTxtFile(F_GAME_RESOURCES_PATH + R_MISC_PATH + ATLAS_PATH_CONFIG, stringsToString(pathList, "\r\n"));
-
-		// 设置所有图集不打入包体,虽然不太好理解这个,不过设置为false以后AssetBundle中就不会出现冗余的图片,否则AssetBundle将会变得异常大
-		foreach (string file in findFilesNonAlloc(F_GAME_RESOURCES_PATH, SPRITE_ATLAS_SUFFIX))
-		{
-			var atlas = loadAsset<SpriteAtlas>(file);
-			if (atlas == null)
-			{
-				Debug.LogError("图集加载失败:" + file);
-			}
-			atlas.SetIncludeInBuild(false);
-		}
-		AssetDatabase.SaveAssets();
-		AssetDatabase.Refresh();
-		return true;
+		clearAssetBundleName();
 	}
-	protected static void postProcess()
-	{
-		foreach (string file in findFilesNonAlloc(F_GAME_RESOURCES_PATH, SPRITE_ATLAS_SUFFIX))
-		{
-			var atlas = loadAsset<SpriteAtlas>(file);
-			if (atlas == null)
-			{
-				Debug.LogError("图集加载失败:" + file);
-			}
-			atlas.SetIncludeInBuild(true);
-		}
-		AssetDatabase.SaveAssets();
-		AssetDatabase.Refresh();
-	}
+	//------------------------------------------------------------------------------------------------------------------------------
 	public static bool packAssetBundle(BuildTarget target, string outputPath, bool showMessageBox)
 	{
 		Debug.Log("打包全部AssetBundle");
@@ -101,16 +76,7 @@ public class MenuAssetBundle
 			clearUnPackAssetBundleName(findFilesNonAlloc(F_GAME_RESOURCES_PATH), getUnpackFolder());
 			// 设置bunderName
 			// key为AssetBundle名,带Resources下相对路径,带后缀,Value是该AssetBundle中包含的所有Asset
-			Dictionary<string, BuildAssetBundleInfo> assetBundleMap = new();
-			foreach (string dir in getAllSubResDirs(P_GAME_RESOURCES_PATH))
-			{
-				if (!generateAssetBundleName(dir, assetBundleMap, showMessageBox))
-				{
-					break;
-				}
-			}
-			EditorUtility.UnloadUnusedAssetsImmediate();
-			AssetDatabase.Refresh();
+			Dictionary<string, BuildAssetBundleInfo> assetBundleMap = doRefreshAllAssetBundleName();
 			// 打包
 			// 使用LZMA压缩,并且不写入资源类型信息
 			var option = BuildAssetBundleOptions.StrictMode;
@@ -152,8 +118,8 @@ public class MenuAssetBundle
 		mIsPackingAssetBundle = false;
 		return result;
 	}
-	// pathToPack为以Asset开头的相对路径,表示只单独打包此目录或此文件
-	public static bool packAssetBundle(BuildTarget target, string outputPath, string pathToPack, bool showMessageBox)
+	// pathToPack为以Asset开头的相对路径,表示只单独打包此目录或此文件,已经废弃了
+	public static bool packSinglePathAssetBundle(BuildTarget target, string outputPath, string pathToPack, bool showMessageBox)
 	{
 		if (pathToPack.isEmpty())
 		{
@@ -162,7 +128,7 @@ public class MenuAssetBundle
 		}
 		Debug.Log("单独打包:" + pathToPack);
 		AssetBundleBuild[] buildList = null;
-		findAssetBundleBuild(pathToPack, ref buildList);
+		findAssetBundleToBuild(pathToPack, ref buildList);
 		DateTime time0 = DateTime.Now;
 		if (buildList != null)
 		{
@@ -211,6 +177,50 @@ public class MenuAssetBundle
 		}
 		showInfo("资源打包结束! 耗时 : " + (DateTime.Now - time0), showMessageBox, false);
 		return true;
+	}
+	protected static bool preProcess()
+	{
+		// 收集所有图集,然后将信息写入到图集路径的配置文件中,这个文件会在AtlasManager中用到
+		List<string> pathList = new();
+		HashSet<string> fileNameList = new();
+		foreach (string file in findFilesNonAlloc(F_GAME_RESOURCES_PATH, SPRITE_ATLAS_SUFFIX))
+		{
+			pathList.Add(file.removeStartString(F_GAME_RESOURCES_PATH));
+			if (!fileNameList.Add(getFileNameNoSuffixNoDir(file)))
+			{
+				Debug.LogError("存在重名的图集文件:" + getFileNameNoSuffixNoDir(file));
+				return false;
+			}
+		}
+		writeTxtFile(F_GAME_RESOURCES_PATH + R_MISC_PATH + ATLAS_PATH_CONFIG, stringsToString(pathList, "\r\n"));
+
+		// 设置所有图集不打入包体,虽然不太好理解这个,不过设置为false以后AssetBundle中就不会出现冗余的图片,否则AssetBundle将会变得异常大
+		foreach (string file in findFilesNonAlloc(F_GAME_RESOURCES_PATH, SPRITE_ATLAS_SUFFIX))
+		{
+			var atlas = loadAsset<SpriteAtlas>(file);
+			if (atlas == null)
+			{
+				Debug.LogError("图集加载失败:" + file);
+			}
+			atlas.SetIncludeInBuild(false);
+		}
+		AssetDatabase.SaveAssets();
+		AssetDatabase.Refresh();
+		return true;
+	}
+	protected static void postProcess()
+	{
+		foreach (string file in findFilesNonAlloc(F_GAME_RESOURCES_PATH, SPRITE_ATLAS_SUFFIX))
+		{
+			var atlas = loadAsset<SpriteAtlas>(file);
+			if (atlas == null)
+			{
+				Debug.LogError("图集加载失败:" + file);
+			}
+			atlas.SetIncludeInBuild(true);
+		}
+		AssetDatabase.SaveAssets();
+		AssetDatabase.Refresh();
 	}
 	protected static void findAllDependencies(string assetBundleName)
 	{
@@ -341,7 +351,7 @@ public class MenuAssetBundle
 		}
 	}
 	// 查找一个目录中所有需要打包的资源包
-	protected static void findAssetBundleBuild(string path, ref AssetBundleBuild[] list)
+	protected static void findAssetBundleToBuild(string path, ref AssetBundleBuild[] list)
 	{
 		Dictionary<string, List<string>> assetBundleList = new();
 		// path是文件
@@ -385,21 +395,69 @@ public class MenuAssetBundle
 		}
 		EditorUtility.UnloadUnusedAssetsImmediate();
 	}
-	// 获得一个文件的所属AssetBundle名,file是以Assets开头的相对路径
-	protected static string getFileAssetBundleName(string file, bool forceSingle = false)
+	// 获得一个文件的所属AssetBundle名,file是以Assets开头的相对路径,这个就是AssetBundle打包最核心的规则
+	protected static string generateFileAssetBundleName(string file, bool forceSingle = false)
 	{
+		// .meta不能设置AssetBundle
+		// .DS_Store是mac的特殊文件,也不能设置AssetBundle
+		// .cginc是仅编辑器下使用的资源,不能打包AssetBundle
+		// tpsheet文件不打包
+		// LightingData.asset文件不能打包AB,这是一个特殊文件,只用于编辑器
+		if (file.endWith(".meta") ||
+			file.endWith(".DS_Store") ||
+			file.endWith(".cginc") ||
+			file.endWith(".hlsl") ||
+			file.endWith(".glslinc") ||
+			file.endWith(".tpsheet") ||
+			file.endWith("LightingData.asset") ||
+			(!file.endWith(".spriteatlasv2") && isSpriteInAtlas(file)))
+		{
+			return EMPTY;
+		}
 		string bundleName;
 		// unity(但是一般情况下unity场景文件不打包)单个文件打包,就是直接替换后缀名,或者强制为单独一个包的
 		if (file.endWith(".unity") || forceSingle)
 		{
-			bundleName = file.removeStartString(P_GAME_RESOURCES_PATH, false);
-			bundleName = replaceSuffix(bundleName, ASSET_BUNDLE_SUFFIX);
+			bundleName = replaceSuffix(file.removeStartString(P_GAME_RESOURCES_PATH), ASSET_BUNDLE_SUFFIX);
 		}
 		// 其他文件的AssetBundle就是所属文件夹
 		else
 		{
-			bundleName = getFilePath(file).removeStartString(P_GAME_RESOURCES_PATH, false);
-			bundleName += ASSET_BUNDLE_SUFFIX;
+			bundleName = getFilePath(file).removeStartString(P_GAME_RESOURCES_PATH) + ASSET_BUNDLE_SUFFIX;
+		}
+		// AssetBundle名字必须是小写的,避免多平台可能存在的问题
+		return bundleName.ToLower();
+	}
+	// 刷新指定文件的所属AssetBundle名字
+	protected static string refreshFileAssetBundleName(Dictionary<string, BuildAssetBundleInfo> assetBundleMap, string file, bool forceSingle = false)
+	{
+		AssetImporter importer = AssetImporter.GetAtPath(file);
+		if (importer == null)
+		{
+			return EMPTY;
+		}
+		
+		string fileName = file.rightToLeft();
+		string bundleName = generateFileAssetBundleName(fileName, forceSingle);
+		if (bundleName.isEmpty())
+		{
+			importer.assetBundleName = EMPTY;
+			return EMPTY;
+		}
+		if (importer.assetBundleName != bundleName)
+		{
+			importer.assetBundleName = bundleName;
+		}
+		if (assetBundleMap != null)
+		{
+			// 存储bundleInfo
+			if (!assetBundleMap.TryGetValue(bundleName, out BuildAssetBundleInfo bundleInfo))
+			{
+				bundleInfo = new(bundleName);
+				assetBundleMap.Add(bundleName, bundleInfo);
+			}
+			// 去除Asset/GameResources/前缀,只保留GameResources下相对路径,并且需要是小写的
+			bundleInfo.mAssetNames.Add(fileName.removeStartString(P_GAME_RESOURCES_PATH).ToLower());
 		}
 		return bundleName;
 	}
@@ -414,53 +472,8 @@ public class MenuAssetBundle
 	{
 		return singlePathList.contains((path.removeStartString(P_GAME_RESOURCES_PATH, false) + "/").rightToLeft());
 	}
-	// 刷新指定文件的所属AssetBundle名字
-	protected static string refreshFileAssetBundleName(Dictionary<string, BuildAssetBundleInfo> assetBundleMap, string file, bool forceSingle = false)
-	{
-		AssetImporter importer = AssetImporter.GetAtPath(file);
-		if (importer == null)
-		{
-			return EMPTY;
-		}
-		// .meta不能设置AssetBundle
-		// .DS_Store是mac的特殊文件,也不能设置AssetBundle
-		// .cginc是仅编辑器下使用的资源,不能打包AssetBundle
-		// tpsheet文件不打包
-		// LightingData.asset文件不能打包AB,这是一个特殊文件,只用于编辑器
-		if (file.endWith(".meta") || 
-			file.endWith(".DS_Store") || 
-			file.endWith(".cginc") ||
-			file.endWith(".hlsl") ||
-			file.endWith(".glslinc") ||
-			file.endWith(".tpsheet") ||
-			file.endWith("LightingData.asset"))
-		{
-			importer.assetBundleName = EMPTY;
-			return EMPTY;
-		}
-		
-		string fileName = file.ToLower().rightToLeft();
-		string bundleName = getFileAssetBundleName(fileName, forceSingle);
-		if (importer.assetBundleName != bundleName)
-		{
-			importer.assetBundleName = bundleName;
-		}
-		if (assetBundleMap != null)
-		{
-			// 存储bundleInfo
-			// 去除Asset/GameResources/前缀,只保留GameResources下相对路径
-			string assetName = fileName.removeStartString(P_GAME_RESOURCES_PATH, false);
-			if (!assetBundleMap.TryGetValue(bundleName, out BuildAssetBundleInfo bundleInfo))
-			{
-				bundleInfo = new(bundleName);
-				assetBundleMap.Add(bundleName, bundleInfo);
-			}
-			bundleInfo.mAssetNames.Add(assetName);
-		}
-		return bundleName;
-	}
 	// fullPath是以Asset开头的路径
-	protected static bool generateAssetBundleName(string fullPath, Dictionary<string, BuildAssetBundleInfo> assetBundleMap, bool showErrorMessageBox)
+	protected static bool refreshAssetBundleNames(string fullPath, Dictionary<string, BuildAssetBundleInfo> assetBundleMap, bool showErrorMessageBox)
 	{
 		if (isUnpackPath(fullPath, getUnpackFolder()))
 		{
@@ -481,6 +494,20 @@ public class MenuAssetBundle
 			}
 		}
 		return true;
+	}
+	public static Dictionary<string, BuildAssetBundleInfo> doRefreshAllAssetBundleName()
+	{
+		Dictionary<string, BuildAssetBundleInfo> assetBundleMap = new();
+		foreach (string dir in getAllSubResDirs(P_GAME_RESOURCES_PATH))
+		{
+			if (!refreshAssetBundleNames(dir, assetBundleMap, true))
+			{
+				break;
+			}
+		}
+		EditorUtility.UnloadUnusedAssetsImmediate();
+		AssetDatabase.Refresh();
+		return assetBundleMap;
 	}
 	// 递归获取所有子目录文件夹
 	protected static List<string> getAllSubResDirs(string fullPath)
@@ -539,16 +566,15 @@ public class MenuAssetBundle
 		foreach (string file in findFilesNonAlloc(F_GAME_RESOURCES_PATH))
 		{
 			string fileName = fullPathToProjectPath(file);
-			if(fileName.endWith(".meta"))
+			if (fileName.endWith(".meta"))
 			{
 				continue;
 			}
 			AssetImporter importer = AssetImporter.GetAtPath(fileName);
-			if (importer == null)
+			if (importer != null)
 			{
-				continue;
+				importer.assetBundleName = EMPTY;
 			}
-			importer.assetBundleName = EMPTY;
 		}
 		AssetDatabase.RemoveUnusedAssetBundleNames();
 		AssetDatabase.Refresh();

@@ -265,16 +265,11 @@ public class myUGUIObject : Transformable, IMouseEventCollect
 		}
 		return windowSize;
 	}
-	public override void setAlpha(float alpha)
+	public override void setAlpha(float alpha){}
+	public virtual void setAlphaWithChild(float alpha)
 	{
-		logError("设置UI的透明度需要调用public virtual void setAlpha(float alpha, bool fadeChild)");
-	}
-	public virtual void setAlpha(float alpha, bool fadeChild)
-	{
-		if (fadeChild)
-		{
-			setUGUIChildAlpha(mObject, alpha);
-		}
+		setAlpha(alpha);
+		setUGUIChildAlpha(mObject, alpha);
 	}
 	public virtual void cloneFrom(myUGUIObject obj)
 	{

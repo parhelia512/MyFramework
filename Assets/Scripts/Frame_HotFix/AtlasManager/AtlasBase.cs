@@ -11,27 +11,22 @@ public abstract class AtlasBase
 	protected Dictionary<Sprite, string> mSpriteNameList = new();   // 用于通过Sprite获取名字,由于直接调用.name会有GC,所以通过查找
 	protected HashSet<long> mReferenceTokenList = new();			// 引用凭证,用于判断是否在其他地方被引用
 	protected ResourceRef<UObject> mMainAsset;						// 图集中精灵的主资源,不一定与mTexture一致,用于卸载资源
+	protected string mFilePath;                                     // 图集文件路径,相对于GameResources
 	protected static long mTokenSeed;								// 用于生成一个引用凭证
-	protected string mFilePath;										// 图集文件路径,相对于GameResources
 	public AtlasBase(ResourceRef<UObject> asset)
 	{
 		mMainAsset = asset;
 	}
-	public Sprite getSprite(string name) { return !name.isEmpty() ? mSpriteList.get(name) : null; }
 	public abstract bool isValid();
 	public abstract string getName();
-	public Dictionary<string, Sprite> getSpriteList() { return mSpriteList; }
-	public string getFilePath() { return mFilePath; }
-	public bool hasSprite(Sprite sprite) 
-	{
-		using var a = new ProfilerScope("hasSprite");
-		return sprite != null && mSpriteNameList.ContainsKey(sprite); 
-	}
-	public void unload() { mResourceManager.unload(ref mMainAsset); }
-	public string getFirstSpriteName() { return mSpriteList.firstKey(); }
-	public static long generateToken() { return ++mTokenSeed; }
-	public int getReferenceCount() { return mReferenceTokenList.Count; }
-	public void setFilePath(string filePath) { mFilePath = filePath; }
+	public Sprite getSprite(string name)				{ return !name.isEmpty() ? mSpriteList.get(name) : null; }
+	public Dictionary<string, Sprite> getSpriteList()	{ return mSpriteList; }
+	public string getFilePath()							{ return mFilePath; }
+	public bool hasSprite(Sprite sprite)				{ return sprite != null && mSpriteNameList.ContainsKey(sprite); }
+	public void unload()								{ mResourceManager.unload(ref mMainAsset); }
+	public string getFirstSpriteName()					{ return mSpriteList.firstKey(); }
+	public int getReferenceCount()						{ return mReferenceTokenList.Count; }
+	public void setFilePath(string filePath)			{ mFilePath = filePath; }
 	public void addSprite(Sprite sprite) 
 	{
 		string name = sprite.name;
@@ -50,18 +45,21 @@ public abstract class AtlasBase
 		mFilePath = null;
 		mResourceManager.unload(ref mMainAsset);
 	}
-	public void addReference(long token)
+	public long addReference()
 	{
+		long token = ++mTokenSeed;
 		if (!mReferenceTokenList.Add(token))
 		{
-			logError("添加引用凭证失败");
+			logError("添加引用凭证失败:" + token);
 		}
+		return token;
 	}
-	public void removeReference(long token)
+	public void removeReference(ref long token)
 	{
 		if (!mReferenceTokenList.Remove(token))
 		{
-			logError("移除引用凭证失败,可能是重复移除一个图集");
+			logError("移除引用凭证失败,可能是重复移除一个图集:" + token);
 		}
+		token = 0;
 	}
 }

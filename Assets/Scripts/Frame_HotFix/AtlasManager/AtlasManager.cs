@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.U2D;
-using static FrameUtility;
 using static FrameDefine;
 using static StringUtility;
 using static FrameBaseHotFix;
@@ -61,17 +60,17 @@ public class AtlasManager : FrameSystem
 	public void unloadAtlas(ref AtlasRef atlasPtr)
 	{
 		mAtlasLoader.unloadAtlas(atlasPtr);
-		UN_CLASS(ref atlasPtr);
+		atlasPtr = null;
 	}
 	public void unloadAtlas(List<AtlasRef> atlasPtrList)
 	{
 		atlasPtrList.For(item => mAtlasLoader.unloadAtlas(item));
-		UN_CLASS_LIST(atlasPtrList);
+		atlasPtrList.Clear();
 	}
 	public void unloadAtlas<Key>(Dictionary<Key, AtlasRef> atlasPtrList)
 	{
 		atlasPtrList.forValue(item => mAtlasLoader.unloadAtlas(item));
-		UN_CLASS_LIST(atlasPtrList);
+		atlasPtrList.Clear();
 	}
 	//------------------------------------------------------------------------------------------------------------------------------
 	protected void onAtlasRequested(string name, Action<SpriteAtlas> action)

@@ -408,7 +408,7 @@ public abstract class PlatformBase
 		{
 			options |= BuildOptions.Development;
 			// 不再开启自动连接Profiler,因为这会使打出来的程序无法在其他电脑调试
-			//options |= BuildOptions.ConnectWithProfiler;
+			options |= BuildOptions.ConnectWithProfiler;
 			options |= BuildOptions.EnableDeepProfilingSupport;
 		}
 		return options;

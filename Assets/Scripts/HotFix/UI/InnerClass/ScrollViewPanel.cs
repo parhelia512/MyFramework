@@ -145,7 +145,6 @@ public class ScrollViewPanel : WindowObjectUGUI
 	public override void init()
 	{
 		base.init();
-		mScript.registeInputField(mInputField);
 		mSlider.setSliderCallback(() => { log("slider变化:" + FToS(mSlider.getValue())); });
 		mCheckBox.setCheckCallback((UGUICheckbox checkbox) => { log("checkbox变化:" + checkbox.isChecked()); });
 		mSimpleImageButton.registeCollider(() => { log("mSimpleImageButton被点击"); });

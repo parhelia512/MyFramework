@@ -58,7 +58,7 @@ public class AssetsImport : AssetPostprocessor
 		}
 	}
 	// 图片的导入
-	public void OnPostprocessTexture(Texture2D texture)
+	public void OnPreprocessTexture()
 	{
 		if (MenuAssetBundle.mIsPackingAssetBundle || BuildPipeline.isBuildingPlayer)
 		{
@@ -71,6 +71,22 @@ public class AssetsImport : AssetPostprocessor
 #else
 		textureImporter.mipmapEnabled = false;
 #endif
+		// 如果是属于一个SpriteAtlas的图片,则不进行压缩
+		if (isSpriteInAtlas(textureImporter.assetPath))
+		{
+			textureImporter.textureCompression = TextureImporterCompression.Uncompressed;
+			setPlatformUncompressed(textureImporter, "Android");
+			setPlatformUncompressed(textureImporter, "iPhone");
+			setPlatformUncompressed(textureImporter, "Standalone");
+		}
+	}
+	void setPlatformUncompressed(TextureImporter importer, string platform)
+	{
+		TextureImporterPlatformSettings settings = importer.GetPlatformTextureSettings(platform);
+		settings.overridden = true;
+		settings.format = TextureImporterFormat.RGBA32;
+		settings.textureCompression = TextureImporterCompression.Uncompressed;
+		importer.SetPlatformTextureSettings(settings);
 	}
 	// 导入音频,由编辑器自动在导入音频资源时调用
 	public void OnPostprocessAudio(AudioClip clip)

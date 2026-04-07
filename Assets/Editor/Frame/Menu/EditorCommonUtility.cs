@@ -2927,7 +2927,7 @@ public class EditorCommonUtility
 		if (index >= 0)
 		{
 			// 判断双斜杠之前有多少个双引号,奇数个则表示双斜杠在字符串内
-			string preString = codeLine.Remove(index);
+			string preString = codeLine[..index];
 			if ((getCharCount(preString, '"') & 1) == 0)
 			{
 				return preString;
@@ -3233,6 +3233,15 @@ public class EditorCommonUtility
 		{
 			image.type = Image.Type.Tiled;
 		}
+	}
+	public static bool isSpriteInAtlas(string assetPath)
+	{
+		if (assetPath.startWith(P_ASSETS_PATH))
+		{
+			assetPath = projectPathToFullPath(assetPath);
+		}
+		// 如果是属于一个SpriteAtlas的图片,则不进行压缩
+		return isFileExist(getFilePath(assetPath, true) + getFolderName(assetPath) + ".spriteatlasv2");
 	}
 	//------------------------------------------------------------------------------------------------------------------------------
 	// 获取字体的引用信息 filePath 文件路径 assetType类型 tipText提示信息

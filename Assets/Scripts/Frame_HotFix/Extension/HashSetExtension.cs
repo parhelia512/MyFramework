@@ -188,6 +188,14 @@ public static class HashSetExtension
 		list.Remove(elem);
 		return elem;
 	}
+	public static bool removeIf<T>(this HashSet<T> list, T value, bool condition)
+	{
+		if (condition)
+		{
+			return list.Remove(value);
+		}
+		return false;
+	}
 	public static bool contains<T>(this HashSet<T> list, T other)
 	{
 		if (list.isEmpty())

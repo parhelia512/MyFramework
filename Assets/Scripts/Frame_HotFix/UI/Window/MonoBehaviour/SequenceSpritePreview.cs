@@ -1,9 +1,9 @@
-﻿#if UNITY_EDITOR
-using UnityEngine;
+﻿using UnityEngine;
 
 [ExecuteAlways]
 public class SequenceSpritePreview : SequenceImagePreviewBase
 {
+#if UNITY_EDITOR
 	protected SpriteRenderer mRenderer;
 	public override void Awake()
 	{
@@ -14,6 +14,5 @@ public class SequenceSpritePreview : SequenceImagePreviewBase
 	{
 		return mRenderer;
 	}
-}
-
 #endif
+}

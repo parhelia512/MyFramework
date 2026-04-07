@@ -23,7 +23,7 @@ public class myUGUITileImage : myUGUIObject
 	}
 	public override void destroy()
 	{
-		setAlpha(1.0f, false);
+		setAlpha(1.0f);
 		base.destroy();
 	}
 	public override void cloneFrom(myUGUIObject obj)

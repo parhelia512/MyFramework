@@ -160,26 +160,21 @@ public class AtlasLoader
 		}
 		return op;
 	}
-	// 卸载图集,atlasPtr会在上一层调用中被回收,所以无需在这里去UN_CLASS
+	// 卸载图集
 	public bool unloadAtlas(AtlasRef atlasPtr)
 	{
-		if (atlasPtr == null || !atlasPtr.isValid() || atlasPtr.getToken() == 0)
+		if (atlasPtr == null || !atlasPtr.isValid())
 		{
 			return false;
 		}
 		// 正在加载中的图集无法卸载
 		string atlasName = atlasPtr.getFilePath();
 		// 可能是热更完毕图集管理器清除以后再卸载的,找不到也正常
-		if (!mAtlasList.tryGetValue(atlasName, out AtlasBase atlas))
-		{
-			return false;
-		}
-		
-		if (atlasPtr.getAtlas() != atlas)
+		if (mAtlasList.tryGetValue(atlasName, out AtlasBase atlas) && atlasPtr.getAtlas() != atlas)
 		{
 			logError("要卸载的图集不一致:" + atlasName);
 		}
-		atlasPtr.unuse();
+		UN_CLASS(ref atlasPtr);
 		return true;
 	}
 	// 图集资源已经加载完成,从assets中解析并创建图集信息
