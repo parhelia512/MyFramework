@@ -639,6 +639,16 @@ public class myUGUIObject : Transformable, IMouseEventCollect
 	{
 		mCOMWindowInteractive?.onDragHovered(dragObj, touchPos, hover);
 	}
+	// 判断屏幕坐标是否在当前UI节点矩形范围内
+	// screenPos是以屏幕左下角为原点的屏幕坐标
+	public bool isScreenPosInRect(Vector2 screenPos)
+	{
+		if (mRectTransform == null || !isActiveInHierarchy())
+		{
+			return false;
+		}
+		return RectTransformUtility.RectangleContainsScreenPoint(mRectTransform, screenPos, getUICamera());
+	}
 	public void sortChild()
 	{
 		if (mChildOrderSorted || mChildList.count() <= 1)
